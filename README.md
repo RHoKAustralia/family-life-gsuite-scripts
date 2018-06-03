@@ -2,7 +2,7 @@
 
 ## Summary
 
-This documentation explains how the family life google suite scripts are setup. Basically it involves a Google Form that the family life users have access to that can update the family life spreadsheet through the help of some Google Apps Scripts found in the repo.
+This documentation explains how the family life google suite scripts are setup. Basically it involves a Google Form that the family life staff have access to that can update the family life spreadsheet through the help of some Google Apps Scripts found in the repo.
 
 ## Artifacts
 
@@ -23,7 +23,7 @@ A staging environment (scripts, forms, sheets) has been setup for family life to
 
 ### This repo holds both the staging and production scripts
 
-NOTE: The visual GSuite editor should not be used for versioning and to update scripts if possible. Instead clasp, link below should be used to push to the family life Google Suite scripts.
+NOTE: The visual GSuite editor should not be used for versioning or to update scripts if possible. Instead use clasp, the link below should be used to push to the family life Google Suite scripts.
 
 To install and use clasp follow these instructions https://developers.google.com/apps-script/guides/clasp
 
@@ -45,11 +45,13 @@ Currently the only API this relies on is the Google Directory API (Option can be
 
 - Family life outreach workers can update their status using Google forms instead of a manual spreadsheet
 - Family life outreach workers can receive calendar events and notifications to update their status
-- Family life managers can recieve notifications if their workers haven't udpated their status after a given time (Work in progress)
+- Family life managers can recieve notifications if their workers haven't updated their status after a given time (Work in progress)
 
 ## Important details
 
-- Currently the way the family life Google sheet is setup is relied upon by the script. Ie The email column must exist as well as the update status and notes columns. Any change to the format or options in these columns would need to be reflected in the script.
+- Currently the way the family life Google sheet columns are named is relied upon by the script. I.e. the "Email address" column must exist as well as the "Status" and "Notes" columns. Any change to the format or options in these columns would need to be reflected in the script.
+
+- The Family Life staff email addresses must all be present in the "Email address" column, and must be spelled correctly, with no whitespace
 
 - Google suite App script comes with a debug log that can be found in view -> stacklog 
 
