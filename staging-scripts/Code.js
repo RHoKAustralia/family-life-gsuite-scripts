@@ -6,29 +6,6 @@ function logErrorAndThrow(errorMessage) {
   throw new Error(errorMessage);
 }
 
-function getName() {
-  var email = Session.getActiveUser().getEmail();
-
-  var user = AdminDirectory.Users.get(email);
-  if (!user) {
-    logErrorAndThrow('User does not exist in the Admin directory');
-  }
-
-  return user.name.givenName;
-}
-
-function preloadFormData() {
-    var form = FormApp.getActiveForm();
-    var name = getName();
-
-    form.setTitle('Hello ' + name + ", please update your status");
-}
-
-function onOpen(e) {
-    Logger.log('onOpenForm');
-    preloadFormData();
-}
-
 function getColumnNumberByName(sheetId, columnName) {
   var ss = SpreadsheetApp.openById(sheetId);
   var sheet = ss.getSheets()[0]; // get the first sheet
@@ -44,23 +21,85 @@ function getColumnNumberByName(sheetId, columnName) {
 // identifies the logged-in user, matches the row of the master spreadsheet
 // Email column must be 3rd column
 // spreadsheet id must not change
-function matchUserToRow() {
-  var email = Session.getActiveUser().getEmail();
+function matchUserToRow(userEmail) {
   var sheet = SpreadsheetApp.openById(spreadsheetId); 
   var data = sheet.getDataRange().getValues();
   var emailIndex = getColumnNumberByName(spreadsheetId, 'Email address');
   for (var i = 0; i < data.length; i++) {
-    if (data[i][emailIndex] == email) { 
+    if (data[i][emailIndex] == userEmail) { 
       Logger.log((i));
       return i + 1;
     }
   }
 }
 
+function getScaleItemByTitle(title) {
+  var form = FormApp.getActiveForm();
+  var items = form.getItems(FormApp.ItemType.SCALE);
+
+  for (var i = 0; i < items.length; i++) {
+    var scaleItem = items[i].asScaleItem();
+    if (scaleItem.getTitle() == title) {
+      return scaleItem
+    }
+  }
+}
+
+function getListItemByTitle(title) {
+  var form = FormApp.getActiveForm();
+  var items = form.getItems(FormApp.ItemType.LIST);
+  Logger.log(items)
+
+  for (var i = 0; i < items.length; i++) {
+    Logger.log(items[i].getTitle())
+    Logger.log(title)
+    if (items[i].getTitle() == title) {
+      Logger.log('found it!')
+      return items[i]
+    }
+  }
+}
+
+function getOutReachCalendar() {
+  // Attempt to get the Out Reach calendar if it exist 
+  var outReachCalName = 'Family Life - Out Reach'
+  var calendars = CalendarApp.getCalendarsByName(outReachCalName);
+  if (calendars.length > 0) {
+    return calendars[0]
+  }
+
+  return CalendarApp.createCalendar(outReachCalName)
+}
+
+function createOutReachEvent(duration_min, calendar) {
+  var title = 'Out Reach event';
+  var min_msec = 1000 * 60
+  var start = new Date();
+  var end = new Date(start.getTime() + min_msec * duration_min);
+  var options = { location: 'outReachLoc', description: 'multipe visits', sendInvites: false };
+  var event = calendar.createEvent(title, start, end, options)
+    .setGuestsCanSeeGuests(false);
+}
+
+function createOutReachReminderEvent(duration_min, calendar, reminderOffset_min) {
+  var title = 'Check back in';
+  var eventDescription = 'Remember to use the status form to check back in'
+  var now = new Date();
+  var meetingDuration_msec = 1000 * 60 * 15
+  var min_msec = 1000 * 60
+  var start = new Date(now.getTime() + (min_msec * duration_min) + (reminderOffset_min * min_msec));
+  var end = new Date(now.getTime() + (min_msec * duration_min) + (reminderOffset_min * min_msec) + meetingDuration_msec);
+  var options = { description: eventDescription, sendInvites: false };
+  var event = calendar.createEvent(title, start, end, options)
+    .setGuestsCanSeeGuests(false)
+    .addEmailReminder(5)
+    .addPopupReminder(5)
+}
+
 function onFormSubmit(e) {
     // thank employee
     var form = FormApp.getActiveForm();
-    var name = getName();
+    var respondentEmail = e.response.getRespondentEmail();
     // form.setTitle(name + ", thanks for updating your status!");
 
     // get user-entered data from form submission
@@ -80,7 +119,7 @@ function onFormSubmit(e) {
                     'U', 'V', 'W', 'X', 'Y',
                     'Z', 'AA', 'AB', 'AC', 'AD' ];
                    
-    var row = matchUserToRow();
+    var row = matchUserToRow(respondentEmail);
     if(!row) {
       logErrorAndThrow('Email address is not in spreadsheet');
     }
@@ -95,4 +134,27 @@ function onFormSubmit(e) {
     var spreadsheet = SpreadsheetApp.openById(spreadsheetId);
     spreadsheet.getRange(statusCell).setValue(status);
     spreadsheet.getRange(notesCell).setValue(notes);
+
+    updateCalendar(e.response);
+}
+
+function updateCalendar(formResponse) {
+  var form = FormApp.getActiveForm();
+  var itemResponses = formResponse.getItemResponses();
+
+  var statusItem = getListItemByTitle('Current status');
+  var statusResponse = formResponse.getResponseForItem(statusItem).getResponse();
+  //The response string should be hard coded
+  if (statusResponse == 'Home visit') {
+    var minInHour = 60;
+
+    var StatusResponseValue = formResponse.getItemResponses()[2].getResponse();
+    var timeUntilBack_min_Value = StatusResponseValue * minInHour;
+
+    var outReachCalendar = getOutReachCalendar();
+    // create event
+    var reminderOffset_min = 30;
+    createOutReachEvent(timeUntilBack_min_Value, outReachCalendar);
+    createOutReachReminderEvent(timeUntilBack_min_Value, outReachCalendar, reminderOffset_min);
+  }
 }
