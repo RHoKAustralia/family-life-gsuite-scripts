@@ -4,6 +4,12 @@
 
 This documentation explains how the family life google suite scripts are setup. Basically it involves a Google Form that the family life users have access to that can update the family life spreadsheet through the help of some Google Apps Scripts found in the repo.
 
+## Artifacts
+
+- Update status Google forms both staging and production (Live in family life Google Suite)
+- Status Google sheets both staging and production (Live in family life Google Suite)
+- This repo, contains all the scrips
+
 ## Requirements
 
 - The owner of the forms must be a Google Suite Admin
