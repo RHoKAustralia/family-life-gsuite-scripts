@@ -1,15 +1,20 @@
 var spreadsheetId = '1j9sZCLVUP1KWtWyctuLgrLpQ1SX_y1la2y34zS01JNg';
 
+function logErrorAndThrow(errorMessage) {
+  MailApp.sendEmail(email, 'Form submission failure notification', errorMessage);
+  Logger.log(errorMessage);
+  throw new Error(errorMessage);
+}
+
 function getName() {
-    var email = Session.getActiveUser().getEmail();
-  
-    var user = AdminDirectory.Users.get(email);
-  
-    if (!user) {
-        Logger.log('Contact does not exist in the directory');
-    }
-  
-    return user.name.givenName;
+  var email = Session.getActiveUser().getEmail();
+
+  var user = AdminDirectory.Users.get(email);
+  if (!user) {
+    logErrorAndThrow('User does not exist in the Admin directory');
+  }
+
+  return user.name.givenName;
 }
 
 function preloadFormData() {
@@ -76,6 +81,10 @@ function onFormSubmit(e) {
                     'Z', 'AA', 'AB', 'AC', 'AD' ];
                    
     var row = matchUserToRow();
+    if(!row) {
+      logErrorAndThrow('Email address is not in spreadsheet');
+    }
+  
     var statusIndex = getColumnNumberByName(spreadsheetId, 'Status');
     var statusCell = alphabet[statusIndex] + row; 
     var notesIndex = getColumnNumberByName(spreadsheetId, 'Notes');
